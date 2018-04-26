@@ -1,0 +1,359 @@
+<!--
+CandyCrush
+Your Name: Edward Hughes
+Collaborators: nobody
+-->
+<!DOCTYPE html>
+<html>
+<!--
+/* Copyright (c) 2017 MIT 6.813/6.831 course staff, all rights reserved.
+ * Redistribution of original or derived work requires permission of course staff.
+ */
+-->
+
+	<head>
+		<meta charset="utf-8">
+		<title>CandyCrush</title>
+		
+		<!-- Load style sheets -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.css">
+		
+		<link rel="stylesheet" href="mainLayout.css">
+		
+		<!-- Use mobile-aware viewport -->
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		
+		<!-- Load any supplemental Javascript libraries here -->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/2.4.2/seedrandom.js"></script>
+		<script src="candy.js"></script>
+		<script src="board.js"></script>
+		<script src="rules.js"></script>
+		
+		<script>
+			// By default, the first board loaded by your page will be the same 
+			// each time you load (which is accomplished by "seeding" the random
+			// number generator. This makes testing (and grading!) easier!
+			Math.seedrandom(0);
+			
+			
+			// A short jQuery extension to read query parameters from the URL.
+			$.extend({
+				getUrlVars: function() {
+					var vars = [], pair;
+					var pairs = window.location.search.substr(1).split('&');
+					for (var i = 0; i < pairs.length; i++) {
+						pair = pairs[i].split('=');
+						vars.push(pair[0]);
+						vars[pair[0]] = pair[1] &&
+						decodeURIComponent(pair[1].replace(/\+/g, ' '));
+					}
+					return vars;
+				},
+				getUrlVar: function(name) {
+					return $.getUrlVars()[name];
+				}
+			});
+			
+			// constants
+			var DEFAULT_BOARD_SIZE = 8;
+			
+			// data model at global scope for easier debugging
+			var board;
+			var rules;
+			
+			var moveInputElement;
+			
+			// initialize board
+			if ($.getUrlVar('size') && $.getUrlVar('size') >= 3) {
+				board = new Board($.getUrlVar('size'));
+			} else {
+				board = new Board(DEFAULT_BOARD_SIZE);
+			}
+			
+			// load a rule
+			rules = new Rules(board);
+			
+			// Final initialization entry point: the Javascript code inside this block
+			// runs at the end of start-up when the page has finished loading.
+			$(document).ready(function() {
+				// Your code here.
+				moveInputElement = document.getElementById("moveInput");
+				DrawBoard();
+				EnableCrushButton(false);
+				EnableMoveButtons(false);
+				
+			});
+			
+			
+			/* Event Handlers */
+			// access the candy object with info.candy
+			
+			// add a candy to the board
+			$(board).on('add', function(e, info) {
+				// Your code here.
+				console.log("ADD");
+				var div = document.createElement('div');
+				$(div).data("candy", info.candy);
+				$(div).addClass("candy-" + info.candy.toString());
+				$(div).attr("id", "candy-id-" + info.candy.id);
+				
+				var letter = String.fromCharCode(info.candy.col + 97);
+				var num = (info.candy.row + 1).toString();
+				//$(div).attr("id", letter + num);
+				$(div).attr("data-position", letter+num);
+				$(div).append(letter + num);
+			
+				var row = $("#gameBoard").children()[info.candy.row];
+				var cell = $(row).children()[info.candy.col];
+				
+				cell.append(div);
+				CheckAvailableCrush();
+			});
+			
+			function CheckAvailableCrush(){
+				if (rules.getCandyCrushes().length == 0){
+					console.log("HERE");
+					EnableCrushButton(false);
+				}
+				else {
+					console.log("BLAH");
+					EnableCrushButton(true);
+				}
+			}
+			
+			// move a candy on the board
+			$(board).on('move', function(e, info) {
+				// Your code here.
+				console.log("MOVE");
+				var candyDiv = document.getElementById("candy-id-" + info.candy.id);
+				candyDiv.parentNode.removeChild(candyDiv);
+				
+				
+				var div = document.createElement('div');
+				$(div).data("candy", info.candy);
+				$(div).addClass("candy-" + info.candy.toString());
+				$(div).attr("id", "candy-id-" + info.candy.id);
+				
+				var letter = String.fromCharCode(info.candy.col + 97);
+				var num = (info.candy.row + 1).toString();
+				//$(div).attr("id", letter + num);
+				$(div).attr("data-position", letter+num);
+				$(div).append(letter + num);
+			
+				var row = $("#gameBoard").children()[info.candy.row];
+				var cell = $(row).children()[info.candy.col];
+				
+				cell.append(div);
+				
+				CheckAvailableCrush();
+			});
+			
+			// remove a candy from the board
+			$(board).on('remove', function(e, info) {
+				// Your code here.
+				console.log("REMOVE");
+				var element = document.getElementById("candy-id-" + info.candy.id);
+				element.parentNode.removeChild(element);
+			});
+			
+			// move a candy on the board
+			$(board).on('scoreUpdate', function(e, info) {
+				// Your code here. To be implemented in pset 2.
+				console.log("SCORE UPDATE");
+			});
+			
+			// Button Events
+			$(document).on('click', ".btn", function(evt) {
+				var id = evt.target.id;
+				if (id == "newGame") {
+					console.log("new game");
+					NewGame();
+				}
+				else if (id == "crushOnce"){
+					console.log("crush once");
+					CrushOnce();
+				}
+				else if (id == "up" || id == "left" || id == "right" || id == "down") {
+					MoveCandy(id);
+				}
+				//clear txt field
+				moveInputElement.value = '';
+				//focus txt field
+				moveInputElement.focus();
+			});
+			
+			var letter = "";
+			var num = "";
+			
+			// keyboard events arrive here
+			$(document).on('keydown', function(evt) {
+				// Your code here.
+				if (evt.originalEvent.key == "n"){
+					NewGame();
+					moveInputElement.value = '';
+					moveInputElement.focus();
+				}
+				else if (evt.originalEvent.key == "ArrowUp"){
+					MoveCandy("up");
+					moveInputElement.value = '';
+					moveInputElement.focus();
+				}
+				else if (evt.originalEvent.key == "ArrowLeft"){
+					MoveCandy("left");
+					moveInputElement.value = '';
+					moveInputElement.focus();
+				}
+				else if (evt.originalEvent.key == "ArrowRight"){
+					MoveCandy("right");
+					moveInputElement.value = '';
+					moveInputElement.focus();
+				}
+				else if (evt.originalEvent.key == "ArrowDown"){
+					MoveCandy("down");
+					moveInputElement.value = '';
+					moveInputElement.focus();
+				}
+				//space bar
+				else if (evt.originalEvent.keyCode == 32){
+					CrushOnce();
+					moveInputElement.value = '';
+					moveInputElement.focus();
+				}
+			});
+			
+			function CrushOnce(){
+				EnableMoveButtons(false);
+				
+				rules.removeCrushes(rules.getCandyCrushes());
+				setTimeout(function(){
+					rules.moveCandiesDown();
+				}, 500);
+				
+				CheckAvailableCrush();
+			}
+			
+			function MoveCandy(direction){
+				var position = moveInputElement.value.toLowerCase();
+				var div = $("div").find("[data-position='" + position + "']");
+				if (div != null){
+					var candy = div.data("candy");
+					if(rules.isMoveTypeValid(candy, direction)){
+						console.log("valid up move");
+						var candy2 = board.getCandyInDirection(candy, direction);
+						board.flipCandies(candy, candy2);
+						EnableMoveButtons(false);
+						EnableCrushButton(true);
+						
+					}
+				}
+				
+			}
+			
+			function NewGame(){
+				board.clear();
+				rules.prepareNewGame();
+				moveInputElement.focus();
+			}
+			
+			function CheckInput(){
+				console.log("input change");
+				console.log(moveInputElement.validity.valid);
+				if (moveInputElement.validity.valid && moveInputElement != ""){
+					EnableMoveButtons(true);
+					$(moveInputElement).css("box-shadow", "0 0 15px green");
+				}
+				else{
+					EnableMoveButtons(false);
+					$(moveInputElement).css("box-shadow", "0 0 15px red");
+					if(moveInputElement.value.toLowerCase() == "n" || moveInputElement.value == " "){
+						moveInputElement.value = "";
+					}
+				}
+				
+			}
+			
+			function EnableMoveButtons(enable){
+				if (enable){
+					$(".arrow").removeAttr("disabled");
+				}
+				else{
+					$(".arrow").attr("disabled", "disabled");
+				}
+			}
+			
+			function EnableCrushButton(enable){
+				if (enable){
+					$("#crushOnce").removeAttr("disabled");
+				}
+				else{
+					$("#crushOnce").attr("disabled", "disabled");
+				}
+			}
+			
+			function DrawBoard(){
+				console.log("Draw empty board");
+				$('#gameBoard').empty();
+				
+				for(var row = 0; row < board.boardSize; row++){
+					var tr = document.createElement('tr');
+					$('#gameBoard').append(tr);
+					for(var col = 0; col < board.boardSize; col++){
+						var td = document.createElement('td');
+						tr.append(td);
+					}
+				}
+			}
+		</script>
+		
+	</head>
+
+	<body>
+		<div class="container">
+			<div class="row">
+				<div class="col-md-3" id="firstColumn">
+					<h1 id="gameTitle">Candy Crush</h1>
+					<input class="btn btn-default" type="button" id="newGame" value="New Game (n)">
+				</div>
+				
+				<div class="col-md-6" id="mainColumn">
+					<table id="gameBoard" border="1">
+					</table>
+				</div>
+				
+				<div class="col-md-3" id="lastColumn">
+					<div class="col-md-12">
+						<form action="">
+							Move: <input type="text" id="moveInput" maxlength="2" value="" pattern="^[a-hA-H][1-8]" oninput="CheckInput()">
+						</form>
+					</div>
+					<div class="col-md-12">
+						<table id="arrowContainer">
+							<tr>
+								<td></td>
+								<td><input class="btn btn-default arrow" type="button" id="up" value="&uarr;"></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><input class="btn btn-default arrow" type="button" id="left" value="&larr;"></td>
+								<td></td>
+								<td><input class="btn btn-default arrow" type="button" id="right" value="&rarr;"></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td><input class="btn btn-default arrow" type="button" id="down" value="&darr;"></td>
+								<td></td>
+							</tr>
+						</table>
+					</div>
+					<div class="col-md-12">
+						<input class="btn btn-default" type="button" id="crushOnce" value="Crush Once (spacebar)">
+					</div>
+				</div>
+				
+			</div> <!-- class="row" -->
+		</div> <!-- class="container" -->
+	
+	</body>
+
+</html>
