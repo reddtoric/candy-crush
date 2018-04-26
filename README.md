@@ -1,4 +1,8 @@
 # Candy Crush
+- mobile compatibility (not just looks but game is playable in mobile)
+- keypress: 'n' for New Game
+- keypress: "space" for Show Move
+
 
 ### PS 1: Model/View and Event Handling
 
@@ -7,6 +11,3 @@
 ### PS 3: Input
 - final problem set
 - code cleaned up
-- mobile compatibility (not just looks but game is playable in mobile)
-- keypress: 'n' for New Game
-- keypress: "space" for Show Move
