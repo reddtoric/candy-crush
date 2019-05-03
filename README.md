@@ -1,4 +1,5 @@
 # Candy Crush
+[Play](https://EdDevs.com/candy-crush)
 - mobile compatibility (not just looks but game is playable in mobile)
 - keypress: 'n' for New Game
 - keypress: "space" for Show Move
